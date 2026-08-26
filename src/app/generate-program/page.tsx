@@ -111,22 +111,27 @@ const GenerateProgramPage = () => {
       const errorMsg =
         error?.message ?? error?.msg ?? JSON.stringify(error);
 
+      let friendlyMsg = "Connection failed. Please check your network.";
+
       if (statusCode === 401 || errorMsg?.includes("401") || errorMsg?.toLowerCase().includes("unauthorized")) {
+        friendlyMsg = "Error: Invalid Vapi API Key (401).";
         console.error(
           "[Vapi] 🔑 401 Unauthorized — Your NEXT_PUBLIC_VAPI_API_KEY is invalid or expired. " +
             "Verify the key in your .env.local matches your Vapi dashboard."
         );
       } else if (statusCode === 404 || errorMsg?.includes("404") || errorMsg?.toLowerCase().includes("not found")) {
+        friendlyMsg = "Error: Vapi Assistant Workflow not found (404).";
         console.error(
           "[Vapi] 🔍 404 Not Found — The assistant/workflow ID (NEXT_PUBLIC_VAPI_WORKFLOW_ID) was not found. " +
             "Check that it exists in your Vapi dashboard and is correctly set in .env.local."
         );
       } else if (statusCode === 403 || errorMsg?.toLowerCase().includes("forbidden")) {
-        console.error(
-          "[Vapi] 🚫 403 Forbidden — Your API key does not have permission for this resource."
-        );
+        friendlyMsg = "Error: Forbidden (403) by Vapi.";
+      } else if (errorMsg) {
+        friendlyMsg = `Error: ${errorMsg}`;
       }
 
+      setMicError(friendlyMsg);
       setConnecting(false);
       setCallActive(false);
     };
@@ -275,12 +280,8 @@ const GenerateProgramPage = () => {
       console.log("[Vapi] 📞 vapi.start() resolved — waiting for call-start event.");
     } catch (error: any) {
       console.error("[Vapi] ❌ Failed to start call:", error);
-      console.error("[Vapi] Error details:", {
-        message: error?.message,
-        statusCode: error?.statusCode ?? error?.status,
-        name: error?.name,
-        stack: error?.stack,
-      });
+      const errorMsg = error?.message || "Please check your Vapi configuration.";
+      setMicError(`Start failed: ${errorMsg}`);
       setConnecting(false);
     }
   };
