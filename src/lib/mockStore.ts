@@ -144,10 +144,18 @@ export function generateAndSavePlan(
 ): Plan {
   // Generate customized content dynamically based on goal
   let schedule = ["Monday", "Wednesday", "Friday"];
-  if (workoutDays === 4) {
+  if (workoutDays === 1) {
+    schedule = ["Wednesday"];
+  } else if (workoutDays === 2) {
+    schedule = ["Tuesday", "Thursday"];
+  } else if (workoutDays === 4) {
     schedule = ["Monday", "Tuesday", "Thursday", "Friday"];
   } else if (workoutDays === 5) {
     schedule = ["Monday", "Tuesday", "Wednesday", "Friday", "Saturday"];
+  } else if (workoutDays === 6) {
+    schedule = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  } else if (workoutDays === 7) {
+    schedule = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   }
   
   const exercises: ExerciseDay[] = schedule.map(day => {

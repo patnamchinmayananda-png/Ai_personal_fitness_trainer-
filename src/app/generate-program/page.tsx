@@ -158,11 +158,35 @@ const GenerateProgramPage = () => {
         setConnecting(false);
 
         if (replyText.includes("Generating your personalized program")) {
+          let parsedDays = 3;
+          let parsedGoal = "Muscle Gain";
+          
+          const fullHistory = [...updatedMessages, assistantMsg];
+          for (let i = fullHistory.length - 1; i >= 0; i--) {
+            const m = fullHistory[i];
+            if (m.role === "user") {
+              const content = m.content.toLowerCase();
+              if (content.includes("7") || content.includes("seven")) parsedDays = 7;
+              else if (content.includes("6") || content.includes("six")) parsedDays = 6;
+              else if (content.includes("5") || content.includes("five")) parsedDays = 5;
+              else if (content.includes("4") || content.includes("four")) parsedDays = 4;
+              else if (content.includes("3") || content.includes("three")) parsedDays = 3;
+              else if (content.includes("2") || content.includes("two")) parsedDays = 2;
+              else if (content.includes("1") || content.includes("one")) parsedDays = 1;
+              
+              if (content.includes("lose") || content.includes("weight") || content.includes("fat") || content.includes("diet")) {
+                parsedGoal = "Weight Loss";
+              } else if (content.includes("muscle") || content.includes("gain") || content.includes("strength")) {
+                parsedGoal = "Muscle Gain";
+              }
+            }
+          }
+
           setTimeout(() => {
             generateAndSavePlan(
               user?.id || "user_mock123",
-              "Muscle Gain",
-              3,
+              parsedGoal,
+              parsedDays,
               "Intermediate"
             );
             setCallEnded(true);
