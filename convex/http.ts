@@ -290,4 +290,146 @@ http.route({
   }),
 });
 
+http.route({
+  path: "/chat",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const { messages } = await request.json();
+
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash-001",
+        generationConfig: {
+          temperature: 0.7,
+        },
+      });
+
+      const chat = model.startChat({
+        history: messages.slice(0, -1).map((m: any) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }],
+        })),
+        systemInstruction: `You are Power House, an expert AI Personal Fitness Trainer. 
+Your goal is to guide the user in a friendly, conversational way to design their custom workout and diet plan.
+Follow these steps:
+1. Greet them and ask for their primary fitness goal (e.g., muscle gain, fat loss, general health).
+2. Ask about their experience level (beginner, intermediate, advanced) and how many days a week they can commit to training (e.g. 3, 4, 5 days).
+3. Ask if they have any injuries, physical limitations, or dietary restrictions (like vegan, gluten-free, none).
+4. Once you have all the necessary information, tell them: "Got it! I have all the details. Generating your personalized program now...".
+5. IMPORTANT: When you decide the intake is complete and you say that sentence, the frontend will automatically detect it and call the plan generator. So be sure to clearly declare that you are generating their program when you have all the details! Keep your responses concise and motivating.`,
+      });
+
+      const lastMessage = messages[messages.length - 1].content;
+      const result = await chat.sendMessage(lastMessage);
+      const reply = result.response.text();
+
+      return new Response(JSON.stringify({ reply }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error: any) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }),
+});
+
+http.route({
+  path: "/chat/generate-program",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    try {
+      const { user_id, messages } = await request.json();
+
+      const transcript = messages.map((m: any) => `${m.role === "assistant" ? "Coach" : "User"}: ${m.content}`).join("\n");
+
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash-001",
+        generationConfig: {
+          temperature: 0.3,
+          responseMimeType: "application/json",
+        },
+      });
+
+      const workoutPrompt = `You are an experienced fitness coach. Read the conversation history between the coach and user:
+      \n${transcript}\n
+      
+      Extract their workout preferences and generate a personalized workout plan matching the schema.
+      
+      CRITICAL SCHEMA INSTRUCTIONS:
+      - "sets" and "reps" MUST ALWAYS be NUMBERS, never strings
+      - For example: "sets": 3, "reps": 10
+      - Do NOT use text like "reps": "As many as possible" or "reps": "To failure"
+      
+      Return a JSON object with this EXACT structure:
+      {
+        "schedule": ["Monday", "Wednesday", "Friday"],
+        "exercises": [
+          {
+            "day": "Monday",
+            "routines": [
+              {
+                "name": "Exercise Name",
+                "sets": 3,
+                "reps": 10
+              }
+            ]
+          }
+        ]
+      }`;
+
+      const workoutResult = await model.generateContent(workoutPrompt);
+      const workoutPlanText = workoutResult.response.text();
+      let workoutPlan = cleanAndParseJSON(workoutPlanText);
+      workoutPlan = validateWorkoutPlan(workoutPlan);
+
+      const dietPrompt = `You are an experienced nutrition coach. Read the conversation history between the coach and user:
+      \n${transcript}\n
+      
+      Extract their dietary preferences and generate a personalized diet plan matching the schema.
+      Return a JSON object with this EXACT structure:
+      {
+        "dailyCalories": 2000,
+        "meals": [
+          {
+            "name": "Breakfast",
+            "foods": ["Oatmeal", "Eggs"]
+          }
+        ]
+      }`;
+
+      const dietResult = await model.generateContent(dietPrompt);
+      const dietPlanText = dietResult.response.text();
+      let dietPlan = cleanAndParseJSON(dietPlanText);
+      dietPlan = validateDietPlan(dietPlan);
+
+      const extractPrompt = `Based on the conversation history, what is the user's primary fitness goal in 3 words or less? Respond with just the goal (e.g. Muscle Gain, Weight Loss).
+      \n${transcript}\n`;
+      const extractResult = await model.generateContent(extractPrompt);
+      const fitnessGoal = extractResult.response.text().replace(/[^a-zA-Z0-9\s]/g, "").trim();
+
+      const planId = await ctx.runMutation(api.plans.createPlan, {
+        userId: user_id,
+        dietPlan,
+        isActive: true,
+        workoutPlan,
+        name: `${fitnessGoal || "Custom"} Plan - ${new Date().toLocaleDateString()}`,
+      });
+
+      return new Response(JSON.stringify({ success: true, planId }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error: any) {
+      console.error("Error generating plan from chat:", error);
+      return new Response(JSON.stringify({ success: false, error: error.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }),
+});
+
 export default http;
