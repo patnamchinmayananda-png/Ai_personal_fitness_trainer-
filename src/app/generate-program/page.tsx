@@ -129,14 +129,29 @@ const GenerateProgramPage = () => {
 
     if (IS_MOCK_MODE) {
       setTimeout(() => {
-        const replies = [
-          "Got it! Let's aim for that. How many days per week can you train, and what is your fitness level (beginner, intermediate, or advanced)?",
-          "Awesome! A 3-day intermediate split. Do you have any injuries, limitations, or dietary restrictions I should know about?",
-          "Got it! I have all the details. Generating your personalized program now..."
-        ];
+        const text = userMsg.content.toLowerCase();
+        let replyText = "";
         
-        const assistantReplyCount = messages.filter(m => m.role === "assistant").length;
-        const replyText = replies[Math.min(assistantReplyCount - 1, replies.length - 1)];
+        if (text.includes("hi") || text.includes("hello") || text.includes("hey")) {
+          replyText = "Hello! Tell me about your fitness goals (e.g. build muscle, lose weight) so we can customize your training program.";
+        } else if (text.includes("muscle") || text.includes("strength") || text.includes("bulk") || text.includes("gain")) {
+          replyText = "Got it! Muscle and strength building. How many days a week can you train, and what is your fitness level (beginner, intermediate, advanced)?";
+        } else if (text.includes("lose") || text.includes("fat") || text.includes("weight") || text.includes("lean")) {
+          replyText = "Got it! Calorie burning and fat loss. How many days a week can you train, and what is your fitness level (beginner, intermediate, advanced)?";
+        } else if (text.includes("day") || text.includes("week") || text.includes("intermediate") || text.includes("beginner") || text.includes("advanced") || text.includes("3") || text.includes("4") || text.includes("5")) {
+          replyText = "Understood. Lastly, do you have any injuries, physical limitations, or dietary restrictions (e.g. vegan, none)?";
+        } else if (text.includes("injury") || text.includes("none") || text.includes("vegan") || text.includes("diet") || text.includes("yes") || text.includes("no")) {
+          replyText = "Got it! I have all the details. Generating your personalized program now...";
+        } else {
+          // Fallback sequence based on turn count
+          const replies = [
+            "Got it! Let's aim for that. How many days per week can you train, and what is your fitness level (beginner, intermediate, or advanced)?",
+            "Awesome! A 3-day intermediate split. Do you have any injuries, limitations, or dietary restrictions I should know about?",
+            "Got it! I have all the details. Generating your personalized program now..."
+          ];
+          const assistantReplyCount = messages.filter(m => m.role === "assistant").length;
+          replyText = replies[Math.min(assistantReplyCount - 1, replies.length - 1)];
+        }
         
         const assistantMsg = { role: "assistant", content: replyText };
         setMessages((prev) => [...prev, assistantMsg]);
