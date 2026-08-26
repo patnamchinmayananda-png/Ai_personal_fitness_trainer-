@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import LiveFormCheck from "@/components/LiveFormCheck";
+import CornerElements from "@/components/CornerElements";
 import { vapi, vapiWorkflowId } from "@/lib/vapi";
 import { useUser } from "@/hooks/useMockableClerk";
 import { useRouter } from "next/navigation";
@@ -19,12 +20,79 @@ const GenerateProgramPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [callEnded, setCallEnded] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"voice" | "form">("voice");
+  const [formData, setFormData] = useState({
+    age: "25",
+    height: "175cm",
+    weight: "70kg",
+    fitnessGoal: "Muscle Gain",
+    fitnessLevel: "Intermediate",
+    workoutDays: 3,
+    injuries: "None",
+    dietaryRestrictions: "None",
+  });
 
   const { user } = useUser();
   const router = useRouter();
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const mockCallIntervalRef = useRef<any>(null);
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMicError(null);
+
+    if (IS_MOCK_MODE) {
+      setConnecting(true);
+      setTimeout(() => {
+        generateAndSavePlan(
+          user?.id || "user_mock123",
+          formData.fitnessGoal,
+          formData.workoutDays,
+          formData.fitnessLevel
+        );
+        setConnecting(false);
+        setCallEnded(true);
+      }, 1500);
+    } else {
+      try {
+        setConnecting(true);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/vapi/generate-program`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: user?.id,
+            age: formData.age,
+            height: formData.height,
+            weight: formData.weight,
+            injuries: formData.injuries,
+            workout_days: String(formData.workoutDays),
+            fitness_goal: formData.fitnessGoal,
+            fitness_level: formData.fitnessLevel,
+            dietary_restrictions: formData.dietaryRestrictions,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          setCallEnded(true);
+        } else {
+          setMicError(`Generation failed: ${data.error || "Unknown error"}`);
+        }
+      } catch (err: any) {
+        console.error("Error generating program:", err);
+        setMicError(`Error: ${err.message || "Failed to contact generator backend."}`);
+      } finally {
+        setConnecting(false);
+      }
+    }
+  };
 
   // SOLUTION to get rid of "Meeting has ended" error
   useEffect(() => {
@@ -276,7 +344,6 @@ const GenerateProgramPage = () => {
           user_id: user?.id,
         },
       });
-
       console.log("[Vapi] 📞 vapi.start() resolved — waiting for call-start event.");
     } catch (error: any) {
       console.error("[Vapi] ❌ Failed to start call:", error);
@@ -290,172 +357,341 @@ const GenerateProgramPage = () => {
     <div className="flex flex-col min-h-screen text-foreground overflow-hidden  pb-6 pt-24">
       <div className="container mx-auto px-4 h-full max-w-5xl">
         {/* Title */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-3xl font-bold font-mono">
             <span>Generate Your </span>
             <span className="text-primary uppercase">Fitness Program</span>
           </h1>
           <p className="text-muted-foreground mt-2">
-            Have a voice conversation with our AI assistant to create your personalized plan
+            {activeTab === "voice"
+              ? "Have a voice conversation with our AI assistant to create your personalized plan"
+              : "Fill in the form questionnaire below to generate your custom program instantly for free"}
           </p>
         </div>
 
-        {/* VIDEO CALL AREA */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* AI ASSISTANT CARD */}
-          <Card className="bg-card/90 backdrop-blur-sm border border-border overflow-hidden relative">
-            <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
-              {/* AI VOICE ANIMATION */}
-              <div
-                className={`absolute inset-0 ${isSpeaking ? "opacity-30" : "opacity-0"
-                  } transition-opacity duration-300`}
-              >
-                {/* Voice wave animation when speaking */}
-                <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-center items-center h-20">
-                  {[...Array(5)].map((_, i) => (
+        {/* TAB SWITCHER */}
+        <div className="flex justify-center mb-8">
+          <div className="flex bg-card/60 backdrop-blur-sm border border-border p-1 rounded-full">
+            <button
+              onClick={() => {
+                setActiveTab("voice");
+                setMicError(null);
+              }}
+              className={`px-6 py-2 rounded-full text-xs font-mono transition-all duration-300 ${
+                activeTab === "voice"
+                  ? "bg-primary text-white shadow-lg"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              VOICE COACH
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("form");
+                setMicError(null);
+              }}
+              className={`px-6 py-2 rounded-full text-xs font-mono transition-all duration-300 ${
+                activeTab === "form"
+                  ? "bg-primary text-white shadow-lg"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              MANUAL FORM
+            </button>
+          </div>
+        </div>
+
+        {micError && activeTab === "form" && (
+          <div className="max-w-2xl mx-auto mb-6 p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm text-center font-mono animate-fadeIn">
+            {micError}
+          </div>
+        )}
+
+        {activeTab === "voice" ? (
+          <>
+            {micError && (
+              <div className="max-w-2xl mx-auto mb-6 p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-lg text-sm text-center font-mono animate-fadeIn">
+                {micError}
+              </div>
+            )}
+
+            {/* VIDEO CALL AREA */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* AI ASSISTANT CARD */}
+              <Card className="bg-card/90 backdrop-blur-sm border border-border overflow-hidden relative">
+                <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
+                  {/* AI VOICE ANIMATION */}
+                  <div
+                    className={`absolute inset-0 ${isSpeaking ? "opacity-30" : "opacity-0"
+                      } transition-opacity duration-300`}
+                  >
+                    {/* Voice wave animation when speaking */}
+                    <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-center items-center h-20">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`mx-1 h-16 w-1 bg-primary rounded-full ${isSpeaking ? "animate-sound-wave" : ""
+                            }`}
+                          style={{
+                            animationDelay: `${i * 0.1}s`,
+                            height: isSpeaking ? `${Math.random() * 50 + 20}%` : "5%",
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* AI IMAGE */}
+                  <div className="relative size-32 mb-4">
                     <div
-                      key={i}
-                      className={`mx-1 h-16 w-1 bg-primary rounded-full ${isSpeaking ? "animate-sound-wave" : ""
+                      className={`absolute inset-0 bg-primary opacity-10 rounded-full blur-lg ${isSpeaking ? "animate-pulse" : ""
                         }`}
-                      style={{
-                        animationDelay: `${i * 0.1}s`,
-                        height: isSpeaking ? `${Math.random() * 50 + 20}%` : "5%",
-                      }}
                     />
+
+                    <div className="relative w-full h-full rounded-full bg-card flex items-center justify-center border border-border overflow-hidden">
+                      <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-secondary/10"></div>
+                      <img
+                        src="/ai-avatar.png"
+                        alt="AI Assistant"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+
+                  <h2 className="text-xl font-bold text-foreground">Power House</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Fitness & Diet Coach</p>
+
+                  {/* SPEAKING INDICATOR */}
+
+                  <div
+                    className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border ${isSpeaking ? "border-primary" : ""
+                      }`}
+                  >
+                    <div
+                      className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-primary animate-pulse" : "bg-muted"
+                        }`}
+                    />
+
+                    <span className="text-xs text-muted-foreground">
+                      {isSpeaking
+                        ? "Speaking..."
+                        : callActive
+                          ? "Listening..."
+                          : connecting
+                            ? "Connecting..."
+                            : callEnded
+                              ? "Redirecting to profile..."
+                              : "Waiting..."}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+
+              {/* USER CARD */}
+              <Card className={`bg-card/90 backdrop-blur-sm border overflow-hidden relative`}>
+                <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
+                  {/* User Image */}
+                  <div className="relative size-32 mb-4">
+                    <img
+                      src={user?.imageUrl}
+                      alt="User"
+                      className="size-full object-cover rounded-full"
+                    />
+                  </div>
+
+                  <h2 className="text-xl font-bold text-foreground">You</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest"}
+                  </p>
+
+                  {/* User Ready Text */}
+                  <div className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border`}>
+                    <div className={`w-2 h-2 rounded-full bg-muted`} />
+                    <span className="text-xs text-muted-foreground">Ready</span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* MESSAGE COINTER  */}
+            {messages.length > 0 && (
+              <div
+                ref={messageContainerRef}
+                className="w-full bg-card/90 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 h-64 overflow-y-auto transition-all duration-300 scroll-smooth"
+              >
+                <div className="space-y-3">
+                  {messages.map((msg, index) => (
+                    <div key={index} className="message-item animate-fadeIn">
+                      <div className="font-semibold text-xs text-muted-foreground mb-1">
+                        {msg.role === "assistant" ? "Personal Fitness Trainer AI" : "You"}:
+                      </div>
+                      <p className="text-foreground">{msg.content}</p>
+                    </div>
                   ))}
+
+                  {callEnded && (
+                    <div className="message-item animate-fadeIn">
+                      <div className="font-semibold text-xs text-primary mb-1">System:</div>
+                      <p className="text-foreground">
+                        Your fitness program has been created! Redirecting to your profile...
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              {/* AI IMAGE */}
-              <div className="relative size-32 mb-4">
-                <div
-                  className={`absolute inset-0 bg-primary opacity-10 rounded-full blur-lg ${isSpeaking ? "animate-pulse" : ""
-                    }`}
-                />
+            {/* CALL CONTROLS */}
+            <div className="w-full flex justify-center gap-4">
+              <Button
+                className={`w-40 text-xl rounded-3xl ${callActive
+                    ? "bg-destructive hover:bg-destructive/90"
+                    : callEnded
+                      ? "bg-green-600 hover:bg-green-700"
+                      : "bg-primary hover:bg-primary/90"
+                  } text-white relative`}
+                onClick={toggleCall}
+                disabled={connecting || callEnded}
+              >
+                {connecting && (
+                  <span className="absolute inset-0 rounded-full animate-ping bg-primary/50 opacity-75"></span>
+                )}
 
-                <div className="relative w-full h-full rounded-full bg-card flex items-center justify-center border border-border overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-secondary/10"></div>
-                  <img
-                    src="/ai-avatar.png"
-                    alt="AI Assistant"
-                    className="w-full h-full object-cover"
+                <span>
+                  {callActive
+                    ? "End Call"
+                    : connecting
+                      ? "Connecting..."
+                      : callEnded
+                        ? "View Profile"
+                        : "Start Call"}
+                </span>
+              </Button>
+            </div>
+          </>
+        ) : (
+          /* MANUAL FORM */
+          <Card className="bg-card/60 backdrop-blur-sm border border-border p-6 rounded-lg max-w-2xl mx-auto relative overflow-hidden">
+            <CornerElements />
+
+            <h2 className="text-xl font-bold font-mono text-center mb-6 uppercase tracking-wider">
+              TELL US ABOUT <span className="text-primary">YOURSELF</span>
+            </h2>
+
+            <form onSubmit={handleFormSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Age</label>
+                  <input
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                    className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                    placeholder="25"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Height</label>
+                  <input
+                    type="text"
+                    value={formData.height}
+                    onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                    className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                    placeholder="175cm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Weight</label>
+                  <input
+                    type="text"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                    className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                    placeholder="70kg"
+                    required
                   />
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold text-foreground">Power House</h2>
-              <p className="text-sm text-muted-foreground mt-1">Fitness & Diet Coach</p>
-
-              {/* SPEAKING INDICATOR */}
-
-              <div
-                className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border ${isSpeaking ? "border-primary" : ""
-                  }`}
-              >
-                <div
-                  className={`w-2 h-2 rounded-full ${isSpeaking ? "bg-primary animate-pulse" : "bg-muted"
-                    }`}
-                />
-
-                <span className="text-xs text-muted-foreground">
-                  {micError
-                    ? micError
-                    : isSpeaking
-                      ? "Speaking..."
-                      : callActive
-                        ? "Listening..."
-                        : connecting
-                          ? "Connecting..."
-                          : callEnded
-                            ? "Redirecting to profile..."
-                            : "Waiting..."}
-                </span>
-              </div>
-            </div>
-          </Card>
-
-          {/* USER CARD */}
-          <Card className={`bg-card/90 backdrop-blur-sm border overflow-hidden relative`}>
-            <div className="aspect-video flex flex-col items-center justify-center p-6 relative">
-              {/* User Image */}
-              <div className="relative size-32 mb-4">
-                <img
-                  src={user?.imageUrl}
-                  alt="User"
-                  // ADD THIS "size-full" class to make it rounded on all images
-                  className="size-full object-cover rounded-full"
-                />
-              </div>
-
-              <h2 className="text-xl font-bold text-foreground">You</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                {user ? (user.firstName + " " + (user.lastName || "")).trim() : "Guest"}
-              </p>
-
-              {/* User Ready Text */}
-              <div className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full bg-card border`}>
-                <div className={`w-2 h-2 rounded-full bg-muted`} />
-                <span className="text-xs text-muted-foreground">Ready</span>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* MESSAGE COINTER  */}
-        {messages.length > 0 && (
-          <div
-            ref={messageContainerRef}
-            className="w-full bg-card/90 backdrop-blur-sm border border-border rounded-xl p-4 mb-8 h-64 overflow-y-auto transition-all duration-300 scroll-smooth"
-          >
-            <div className="space-y-3">
-              {messages.map((msg, index) => (
-                <div key={index} className="message-item animate-fadeIn">
-                  <div className="font-semibold text-xs text-muted-foreground mb-1">
-                    {msg.role === "assistant" ? "Personal Fitness Trainer AI" : "You"}:
-                  </div>
-                  <p className="text-foreground">{msg.content}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Fitness Goal</label>
+                  <select
+                    value={formData.fitnessGoal}
+                    onChange={(e) => setFormData({ ...formData, fitnessGoal: e.target.value })}
+                    className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                  >
+                    <option value="Muscle Gain">Muscle Gain</option>
+                    <option value="Weight Loss">Weight Loss</option>
+                    <option value="General Fitness">General Fitness</option>
+                    <option value="Athletic Performance">Athletic Performance</option>
+                  </select>
                 </div>
-              ))}
-
-              {callEnded && (
-                <div className="message-item animate-fadeIn">
-                  <div className="font-semibold text-xs text-primary mb-1">System:</div>
-                  <p className="text-foreground">
-                    Your fitness program has been created! Redirecting to your profile...
-                  </p>
+                <div>
+                  <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Fitness Level</label>
+                  <select
+                    value={formData.fitnessLevel}
+                    onChange={(e) => setFormData({ ...formData, fitnessLevel: e.target.value })}
+                    className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Workout Days (Per Week)</label>
+                <select
+                  value={formData.workoutDays}
+                  onChange={(e) => setFormData({ ...formData, workoutDays: Number(e.target.value) })}
+                  className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                >
+                  <option value={3}>3 Days (Mon, Wed, Fri)</option>
+                  <option value={4}>4 Days (Mon, Tue, Thu, Fri)</option>
+                  <option value={5}>5 Days (Mon, Tue, Wed, Thu, Fri)</option>
+                  <option value={2}>2 Days (Tue, Thu)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Injuries or Limitations</label>
+                <textarea
+                  value={formData.injuries}
+                  onChange={(e) => setFormData({ ...formData, injuries: e.target.value })}
+                  className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none h-20 resize-none transition-colors duration-200"
+                  placeholder="e.g. Knee pain, lower back stiffness, none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Dietary Restrictions</label>
+                <textarea
+                  value={formData.dietaryRestrictions}
+                  onChange={(e) => setFormData({ ...formData, dietaryRestrictions: e.target.value })}
+                  className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none h-20 resize-none transition-colors duration-200"
+                  placeholder="e.g. Vegan, vegetarian, dairy-free, none"
+                />
+              </div>
+
+              <div className="flex justify-center pt-2">
+                <Button
+                  type="submit"
+                  disabled={connecting || callEnded}
+                  className="w-full sm:w-64 text-xl rounded-3xl bg-primary hover:bg-primary/90 text-white relative"
+                >
+                  {connecting && (
+                    <span className="absolute inset-0 rounded-full animate-ping bg-primary/50 opacity-75"></span>
+                  )}
+                  <span>{connecting ? "Generating Plan..." : "Generate Program"}</span>
+                </Button>
+              </div>
+            </form>
+          </Card>
         )}
-
-        {/* CALL CONTROLS */}
-        <div className="w-full flex justify-center gap-4">
-          <Button
-            className={`w-40 text-xl rounded-3xl ${callActive
-                ? "bg-destructive hover:bg-destructive/90"
-                : callEnded
-                  ? "bg-green-600 hover:bg-green-700"
-                  : "bg-primary hover:bg-primary/90"
-              } text-white relative`}
-            onClick={toggleCall}
-            disabled={connecting || callEnded}
-          >
-            {connecting && (
-              <span className="absolute inset-0 rounded-full animate-ping bg-primary/50 opacity-75"></span>
-            )}
-
-            <span>
-              {callActive
-                ? "End Call"
-                : connecting
-                  ? "Connecting..."
-                  : callEnded
-                    ? "View Profile"
-                    : "Start Call"}
-            </span>
-          </Button>
-        </div>
 
         {/* LIVE FORM CHECK */}
         <div className="mt-10">
