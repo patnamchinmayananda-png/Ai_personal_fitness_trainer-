@@ -2,7 +2,9 @@ import { useQuery as useRealQuery } from "convex/react";
 import { getMockPlans } from "@/lib/mockStore";
 
 const IS_MOCK_MODE = typeof process !== "undefined" && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS");
+  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS") ||
+   process.env.NEXT_PUBLIC_CONVEX_URL?.includes("dummy-deployment-123") ||
+   !process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export const useQuery = (IS_MOCK_MODE
   ? (queryFunc: any, args?: any) => {

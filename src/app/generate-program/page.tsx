@@ -10,7 +10,9 @@ import { useEffect, useRef, useState } from "react";
 import { generateAndSavePlan } from "@/lib/mockStore";
 
 const IS_MOCK_MODE = typeof process !== "undefined" && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS");
+  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS") ||
+   process.env.NEXT_PUBLIC_CONVEX_URL?.includes("dummy-deployment-123") ||
+   !process.env.NEXT_PUBLIC_CONVEX_URL);
 
 const GenerateProgramPage = () => {
   const [connecting, setConnecting] = useState(false);

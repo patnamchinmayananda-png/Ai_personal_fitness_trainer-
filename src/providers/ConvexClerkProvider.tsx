@@ -5,7 +5,9 @@ import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 
 const IS_MOCK_MODE = typeof process !== "undefined" && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS");
+  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS") ||
+   process.env.NEXT_PUBLIC_CONVEX_URL?.includes("dummy-deployment-123") ||
+   !process.env.NEXT_PUBLIC_CONVEX_URL);
 
 // Only initialize Convex client if we are not in mock mode
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL || "https://dummy-url.convex.cloud";
