@@ -7,7 +7,9 @@ import { useState, useEffect } from "react";
 import ProfileHeader from "@/components/ProfileHeader";
 import NoFitnessPlan from "@/components/NoFitnessPlan";
 import CornerElements from "@/components/CornerElements";
+import LiveFormCheck from "@/components/LiveFormCheck";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppleIcon, CalendarIcon, DumbbellIcon } from "lucide-react";
 import {
@@ -23,6 +25,7 @@ const ProfilePage = () => {
 
   const allPlans = useQuery(api.plans.getUserPlans, { userId });
   const [selectedPlanId, setSelectedPlanId] = useState<null | string>(null);
+  const [activeFormCheckExercise, setActiveFormCheckExercise] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -158,10 +161,20 @@ const ProfilePage = () => {
                                     </div>
                                   </div>
                                   {routine.description && (
-                                    <p className="text-sm text-muted-foreground mt-1">
+                                    <p className="text-sm text-muted-foreground mt-1 mb-2">
                                       {routine.description}
                                     </p>
                                   )}
+                                  <div className="flex justify-between items-center mt-3 pt-3 border-t border-border/50">
+                                    <span className="text-xs text-muted-foreground font-mono">Calibrated checks ready</span>
+                                    <Button
+                                      onClick={() => setActiveFormCheckExercise(routine.name)}
+                                      size="sm"
+                                      className="h-8 rounded-full border border-primary/50 text-primary bg-primary/10 hover:bg-primary/20 hover:text-white font-mono text-xs uppercase"
+                                    >
+                                      Check Form
+                                    </Button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -219,6 +232,42 @@ const ProfilePage = () => {
         </div>
       ) : (
         <NoFitnessPlan />
+      )}
+
+      {/* POSTURE CHECK MODAL */}
+      {activeFormCheckExercise && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-md p-4 animate-fadeIn">
+          <Card className="relative w-full max-w-2xl bg-card border border-border p-6 rounded-xl shadow-2xl overflow-hidden">
+            <CornerElements />
+            
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-xl font-bold font-mono">
+                  <span>Posture </span>
+                  <span className="text-primary uppercase">Analyzer</span>
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tracking exercise: <span className="text-primary font-bold">{activeFormCheckExercise}</span>
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setActiveFormCheckExercise(null)}
+                className="rounded-full border-border hover:bg-destructive/10 hover:text-destructive font-mono text-xs"
+              >
+                Close
+              </Button>
+            </div>
+
+            <div className="w-full flex justify-center bg-black/40 rounded-lg p-2 border border-border/50">
+              <LiveFormCheck exerciseName={activeFormCheckExercise} />
+            </div>
+            
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 text-xs text-primary rounded-lg font-mono">
+              💡 Stand in front of your camera showing your full profile (side view) so the AI can track your hip and knee joint angles.
+            </div>
+          </Card>
+        </div>
       )}
     </section>
   );

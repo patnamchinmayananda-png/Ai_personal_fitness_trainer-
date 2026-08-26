@@ -59,7 +59,11 @@ export function calculateAngle(a: Landmark, b: Landmark, c: Landmark): number {
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-const LiveFormCheck = () => {
+interface LiveFormCheckProps {
+  exerciseName?: string;
+}
+
+const LiveFormCheck = ({ exerciseName = "Squats" }: LiveFormCheckProps) => {
   const webcamRef = useRef<Webcam>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Store the MediaPipe Camera instance so we can stop it on unmount
@@ -262,22 +266,80 @@ const LiveFormCheck = () => {
 
         // Posture coaching heuristics
         const sideLabel = activeSide === "left" ? "Left Profile" : "Right Profile";
+        const name = exerciseName.toLowerCase();
         
-        if (hipAngle < 85 && kneeAngle > 110) {
-          setPostureStatus({ 
-            label: `⚠️ Back strain / Poor hinge (${sideLabel})`, 
-            color: "text-destructive" 
-          });
-        } else if (kneeAngle < 90) {
-          setPostureStatus({ 
-            label: `✅ Deep squat depth (${sideLabel})`, 
-            color: "text-teal-400" 
-          });
-        } else if (hipAngle < 80) {
-          setPostureStatus({ 
-            label: `⚠️ Hunching forward (${sideLabel})`, 
-            color: "text-yellow-400" 
-          });
+        if (name.includes("squat")) {
+          if (hipAngle < 85 && kneeAngle > 110) {
+            setPostureStatus({ 
+              label: `⚠️ Back strain / Poor hinge (${sideLabel})`, 
+              color: "text-destructive" 
+            });
+          } else if (kneeAngle < 95) {
+            setPostureStatus({ 
+              label: `✅ Good squat depth (${sideLabel})`, 
+              color: "text-teal-400" 
+            });
+          } else if (hipAngle < 80) {
+            setPostureStatus({ 
+              label: `⚠️ Hunching forward (${sideLabel})`, 
+              color: "text-yellow-400" 
+            });
+          } else {
+            setPostureStatus({ 
+              label: `✅ Squatting: ${sideLabel}`, 
+              color: "text-primary" 
+            });
+          }
+        } else if (name.includes("deadlift")) {
+          if (hipAngle < 90 && hipAngle > 70) {
+            setPostureStatus({ 
+              label: `✅ Flat back hip hinge (${sideLabel})`, 
+              color: "text-teal-400" 
+            });
+          } else if (hipAngle < 70) {
+            setPostureStatus({ 
+              label: `⚠️ Spine rounding danger (${sideLabel})`, 
+              color: "text-destructive" 
+            });
+          } else {
+            setPostureStatus({ 
+              label: `✅ Deadlifting: ${sideLabel}`, 
+              color: "text-primary" 
+            });
+          }
+        } else if (name.includes("press")) {
+          if (hipAngle < 155) {
+            setPostureStatus({ 
+              label: `⚠️ Brace core / Avoid back arch (${sideLabel})`, 
+              color: "text-destructive" 
+            });
+          } else {
+            setPostureStatus({ 
+              label: `✅ Straight back alignment`, 
+              color: "text-teal-400" 
+            });
+          }
+        } else if (name.includes("curl")) {
+          const leftElbowAngle = calculateAngle(lm[11], lm[13], lm[15]);
+          const rightElbowAngle = calculateAngle(lm[12], lm[14], lm[16]);
+          const elbowAngle = activeSide === "left" ? leftElbowAngle : rightElbowAngle;
+          
+          if (elbowAngle < 65) {
+            setPostureStatus({ 
+              label: `✅ Biceps peak contraction (${elbowAngle}°)`, 
+              color: "text-teal-400" 
+            });
+          } else if (elbowAngle > 140) {
+            setPostureStatus({ 
+              label: `✅ Full extension stretch`, 
+              color: "text-primary" 
+            });
+          } else {
+            setPostureStatus({ 
+              label: `Keep elbows locked at sides (${elbowAngle}°)`, 
+              color: "text-muted-foreground" 
+            });
+          }
         } else {
           setPostureStatus({ 
             label: `✅ Active: ${sideLabel}`, 
@@ -331,6 +393,7 @@ return () => {
   mediapipeCameraRef.current?.stop();
   mediapipeCameraRef.current = null;
 };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permission]);
 
 // ── Retry ─────────────────────────────────────────────────────────────────
@@ -412,6 +475,13 @@ return (
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/50 backdrop-blur-sm border border-border">
           <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
           <span className="text-xs font-mono text-foreground">LIVE</span>
+        </div>
+
+        {/* Exercise name indicator */}
+        <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-primary/40">
+          <span className="text-xs font-mono text-primary font-bold uppercase">
+            {exerciseName}
+          </span>
         </div>
 
         {/* Posture status badge — updates in real time */}
