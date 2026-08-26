@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import * as RealClerk from "@clerk/nextjs";
 
-// Check if we are in mock mode based on Clerk Publishable Key in environment variables
 const IS_MOCK_MODE = typeof process !== "undefined" && 
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS");
+  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS") ||
+   process.env.NEXT_PUBLIC_CONVEX_URL?.includes("dummy-deployment-123") ||
+   !process.env.NEXT_PUBLIC_CONVEX_URL);
 
 export const useUser = IS_MOCK_MODE 
   ? () => {
