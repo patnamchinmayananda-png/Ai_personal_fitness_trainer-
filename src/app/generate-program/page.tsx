@@ -7,12 +7,7 @@ import CornerElements from "@/components/CornerElements";
 import { useUser } from "@/hooks/useMockableClerk";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { generateAndSavePlan } from "@/lib/mockStore";
 
-const IS_MOCK_MODE = typeof process !== "undefined" && 
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_test_dGVzdC1jbGVyay1kdW1teS") ||
-   process.env.NEXT_PUBLIC_CONVEX_URL?.includes("dummy-deployment-123") ||
-   !process.env.NEXT_PUBLIC_CONVEX_URL);
 
 const GenerateProgramPage = () => {
   const [connecting, setConnecting] = useState(false);
@@ -53,57 +48,42 @@ const GenerateProgramPage = () => {
     e.preventDefault();
     setMicError(null);
 
-    if (IS_MOCK_MODE) {
+    try {
       setConnecting(true);
-      setTimeout(() => {
-        generateAndSavePlan(
-          user?.id || "user_mock123",
-          formData.fitnessGoal,
-          formData.workoutDays,
-          formData.fitnessLevel,
-          formData.workoutStyle
-        );
-        setConnecting(false);
-        setCallEnded(true);
-      }, 1500);
-    } else {
-      try {
-        setConnecting(true);
-        const res = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/vapi/generate-program`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_id: user?.id,
-            age: formData.age,
-            height: formData.height,
-            weight: formData.weight,
-            injuries: formData.injuries,
-            workout_days: String(formData.workoutDays),
-            fitness_goal: formData.fitnessGoal,
-            fitness_level: formData.fitnessLevel,
-            dietary_restrictions: formData.dietaryRestrictions,
-            workout_style: formData.workoutStyle,
-          }),
-        });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/vapi/generate-program`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user_id: user?.id,
+          age: formData.age,
+          height: formData.height,
+          weight: formData.weight,
+          injuries: formData.injuries,
+          workout_days: String(formData.workoutDays),
+          fitness_goal: formData.fitnessGoal,
+          fitness_level: formData.fitnessLevel,
+          dietary_restrictions: formData.dietaryRestrictions,
+          workout_style: formData.workoutStyle,
+        }),
+      });
 
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data.success) {
-          setCallEnded(true);
-        } else {
-          setMicError(`Generation failed: ${data.error || "Unknown error"}`);
-        }
-      } catch (err: any) {
-        console.error("Error generating program:", err);
-        setMicError(`Error: ${err.message || "Failed to contact generator backend."}`);
-      } finally {
-        setConnecting(false);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
+
+      const data = await res.json();
+      if (data.success) {
+        setCallEnded(true);
+      } else {
+        setMicError(`Generation failed: ${data.error || "Unknown error"}`);
+      }
+    } catch (err: any) {
+      console.error("Error generating program:", err);
+      setMicError(`Error: ${err.message || "Failed to contact generator backend."}`);
+    } finally {
+      setConnecting(false);
     }
   };
 
@@ -136,115 +116,41 @@ const GenerateProgramPage = () => {
     setConnecting(true);
     setMicError(null);
 
-    if (IS_MOCK_MODE) {
-      setTimeout(() => {
-        const text = userMsg.content.toLowerCase();
-        let replyText = "";
-        
-        if (text.includes("hi") || text.includes("hello") || text.includes("hey")) {
-          replyText = "Hello! Tell me about your fitness goals (e.g. build muscle, lose weight) so we can customize your training program.";
-        } else if (text.includes("muscle") || text.includes("strength") || text.includes("bulk") || text.includes("gain")) {
-          replyText = "Got it! Muscle and strength building. How many days a week can you train, and what is your fitness level (beginner, intermediate, advanced)?";
-        } else if (text.includes("lose") || text.includes("fat") || text.includes("weight") || text.includes("lean")) {
-          replyText = "Got it! Calorie burning and fat loss. How many days a week can you train, and what is your fitness level (beginner, intermediate, advanced)?";
-        } else if (text.includes("day") || text.includes("week") || text.includes("intermediate") || text.includes("beginner") || text.includes("advanced") || text.includes("3") || text.includes("4") || text.includes("5")) {
-          replyText = "Understood. Lastly, do you have any injuries, physical limitations, or dietary restrictions (e.g. vegan, none)?";
-        } else if (text.includes("injury") || text.includes("none") || text.includes("vegan") || text.includes("diet") || text.includes("yes") || text.includes("no")) {
-          replyText = "Got it! I have all the details. Generating your personalized program now...";
-        } else {
-          // Fallback sequence based on turn count
-          const replies = [
-            "Got it! Let's aim for that. How many days per week can you train, and what is your fitness level (beginner, intermediate, or advanced)?",
-            "Awesome! A 3-day intermediate split. Do you have any injuries, limitations, or dietary restrictions I should know about?",
-            "Got it! I have all the details. Generating your personalized program now..."
-          ];
-          const assistantReplyCount = messages.filter(m => m.role === "assistant").length;
-          replyText = replies[Math.min(assistantReplyCount - 1, replies.length - 1)];
-        }
-        
-        const assistantMsg = { role: "assistant", content: replyText };
-        setMessages((prev) => [...prev, assistantMsg]);
-        setConnecting(false);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updatedMessages }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to contact chat server");
+      
+      const data = await res.json();
+      const assistantMsg = { role: "assistant", content: data.reply };
+      setMessages((prev) => [...prev, assistantMsg]);
+      setConnecting(false);
 
-        if (replyText.includes("Generating your personalized program")) {
-          let parsedDays = 3;
-          let parsedGoal = "Muscle Gain";
-          let parsedStyle = "standard";
-          
-          const fullHistory = [...updatedMessages, assistantMsg];
-          for (let i = fullHistory.length - 1; i >= 0; i--) {
-            const m = fullHistory[i];
-            if (m.role === "user") {
-              const content = m.content.toLowerCase();
-              if (content.includes("7") || content.includes("seven")) parsedDays = 7;
-              else if (content.includes("6") || content.includes("six")) parsedDays = 6;
-              else if (content.includes("5") || content.includes("five")) parsedDays = 5;
-              else if (content.includes("4") || content.includes("four")) parsedDays = 4;
-              else if (content.includes("3") || content.includes("three")) parsedDays = 3;
-              else if (content.includes("2") || content.includes("two")) parsedDays = 2;
-              else if (content.includes("1") || content.includes("one")) parsedDays = 1;
-              
-              if (content.includes("lose") || content.includes("weight") || content.includes("fat") || content.includes("diet")) {
-                parsedGoal = "Weight Loss";
-              } else if (content.includes("muscle") || content.includes("gain") || content.includes("strength")) {
-                parsedGoal = "Muscle Gain";
-              }
-
-              if (content.includes("darebee") || content.includes("bodyweight") || content.includes("circuit") || content.includes("no equipment") || content.includes("home")) {
-                parsedStyle = "darebee";
-              }
-            }
-          }
-
-          setTimeout(() => {
-            generateAndSavePlan(
-              user?.id || "user_mock123",
-              parsedGoal,
-              parsedDays,
-              "Intermediate",
-              parsedStyle
-            );
-            setCallEnded(true);
-          }, 1500);
-        }
-      }, 1000);
-    } else {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/chat`, {
+      if (data.reply.toLowerCase().includes("generating your personalized program") || data.reply.toLowerCase().includes("generating your program")) {
+        setConnecting(true);
+        const genRes = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/chat/generate-program`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: updatedMessages }),
+          body: JSON.stringify({
+            user_id: user?.id,
+            messages: [...updatedMessages, assistantMsg]
+          }),
         });
-        
-        if (!res.ok) throw new Error("Failed to contact chat server");
-        
-        const data = await res.json();
-        const assistantMsg = { role: "assistant", content: data.reply };
-        setMessages((prev) => [...prev, assistantMsg]);
-        setConnecting(false);
-
-        if (data.reply.toLowerCase().includes("generating your personalized program") || data.reply.toLowerCase().includes("generating your program")) {
-          setConnecting(true);
-          const genRes = await fetch(`${process.env.NEXT_PUBLIC_CONVEX_URL}/chat/generate-program`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: user?.id,
-              messages: [...updatedMessages, assistantMsg]
-            }),
-          });
-          const genData = await genRes.json();
-          if (genData.success) {
-            setCallEnded(true);
-          } else {
-            setMicError("Failed to generate plan: " + genData.error);
-          }
+        const genData = await genRes.json();
+        if (genData.success) {
+          setCallEnded(true);
+        } else {
+          setMicError("Failed to generate plan: " + genData.error);
         }
-      } catch (err: any) {
-        console.error("Chat error:", err);
-        setMicError("Chat error: " + err.message);
-        setConnecting(false);
       }
+    } catch (err: any) {
+      console.error("Chat error:", err);
+      setMicError("Chat error: " + err.message);
+      setConnecting(false);
     }
   };
 
