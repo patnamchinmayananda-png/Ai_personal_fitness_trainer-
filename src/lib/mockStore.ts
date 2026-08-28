@@ -140,7 +140,8 @@ export function generateAndSavePlan(
   userId: string, 
   fitnessGoal: string, 
   workoutDays: number, 
-  fitnessLevel: string
+  fitnessLevel: string,
+  workoutStyle?: string
 ): Plan {
   // Generate customized content dynamically based on goal
   let schedule = ["Monday", "Wednesday", "Friday"];
@@ -158,32 +159,84 @@ export function generateAndSavePlan(
     schedule = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   }
   
-  const exercises: ExerciseDay[] = schedule.map(day => {
+  const exercises: ExerciseDay[] = schedule.map((day, dayIndex) => {
     let routines: Routine[] = [];
-    if (fitnessGoal.toLowerCase().includes("loss") || fitnessGoal.toLowerCase().includes("shred")) {
-      routines = [
-        { name: "HIIT Treadmill Sprints", sets: 1, reps: 1, duration: "15 min", description: "30s sprint, 30s walk intervals." },
-        { name: "Dumbbell Goblet Squats", sets: 3, reps: 15, description: "Keep high reps for calorie burning." },
-        { name: "Kettlebell Swings", sets: 3, reps: 20, description: "Explosive swings. Hinge at hips." },
-        { name: "Plank Hold", sets: 3, reps: 1, duration: "60 seconds", description: "Keep core tight and spine neutral." },
+    if (workoutStyle === "darebee") {
+      const darebeeWorkouts = [
+        {
+          name: "Hero's Journey HIIT",
+          routines: [
+            { name: "Bodyweight Lunges", sets: 3, reps: 12, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Push-Ups", sets: 3, reps: 10, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Jumping Jacks", sets: 3, reps: 20, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Plank Shoulder Taps", sets: 3, reps: 16, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." }
+          ]
+        },
+        {
+          name: "Cyberpunk Cardio",
+          routines: [
+            { name: "High Knees", sets: 3, reps: 30, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Mountain Climbers", sets: 3, reps: 20, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Squat Jumps", sets: 3, reps: 12, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Bicycle Crunches", sets: 3, reps: 20, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." }
+          ]
+        },
+        {
+          name: "Ninja Core & Strength",
+          routines: [
+            { name: "Single-Leg Glute Bridges", sets: 3, reps: 12, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Plank Hold", sets: 3, reps: 1, duration: "60 seconds", description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Russian Twists", sets: 3, reps: 20, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Superman Holds", sets: 3, reps: 10, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." }
+          ]
+        },
+        {
+          name: "Gladiator Lower Body",
+          routines: [
+            { name: "Air Squats", sets: 3, reps: 15, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Calf Raises", sets: 3, reps: 15, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Wall Sit", sets: 3, reps: 1, duration: "45 seconds", description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Burpees", sets: 3, reps: 8, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." }
+          ]
+        },
+        {
+          name: "Avatar Fullbody Circuit",
+          routines: [
+            { name: "Push-ups to Downward Dog", sets: 3, reps: 10, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Reverse Lunges", sets: 3, reps: 12, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Flutter Kicks", sets: 3, reps: 20, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." },
+            { name: "Star Jumps", sets: 3, reps: 10, description: "Level 1: 3 rounds. Level 2: 5 rounds. Level 3: 7 rounds. Rest 2 mins between rounds." }
+          ]
+        }
       ];
-    } else if (fitnessGoal.toLowerCase().includes("gain") || fitnessGoal.toLowerCase().includes("build") || fitnessGoal.toLowerCase().includes("muscle")) {
-      routines = [
-        { name: "Compound Bench Press", sets: 4, reps: 8, description: "Hypertrophy focus." },
-        { name: "Seated Cable Rows", sets: 4, reps: 10, description: "Focus on squeeze at the peak." },
-        { name: "Overhead Shoulder Press", sets: 3, reps: 8, description: "Core braced throughout." },
-        { name: "Bicep Curl / Tricep Extension Superset", sets: 3, reps: 12, description: "High pump arm finisher." },
-      ];
+      const workout = darebeeWorkouts[dayIndex % darebeeWorkouts.length];
+      routines = workout.routines.map(r => ({ ...r }));
+      return { day: `${day} (${workout.name})`, routines };
     } else {
-      routines = [
-        { name: "Bodyweight Lunges", sets: 3, reps: 12, description: "Step back lunges for knee safety." },
-        { name: "Push-Ups", sets: 3, reps: 10, description: "Standard pushups. Elevate hands if too difficult." },
-        { name: "Dumbbell Single-Arm Row", sets: 3, reps: 12, description: "Support body on a bench." },
-        { name: "Bicycle Crunches", sets: 3, reps: 20, description: "Slow and controlled core twists." },
-      ];
+      if (fitnessGoal.toLowerCase().includes("loss") || fitnessGoal.toLowerCase().includes("shred")) {
+        routines = [
+          { name: "HIIT Treadmill Sprints", sets: 1, reps: 1, duration: "15 min", description: "30s sprint, 30s walk intervals." },
+          { name: "Dumbbell Goblet Squats", sets: 3, reps: 15, description: "Keep high reps for calorie burning." },
+          { name: "Kettlebell Swings", sets: 3, reps: 20, description: "Explosive swings. Hinge at hips." },
+          { name: "Plank Hold", sets: 3, reps: 1, duration: "60 seconds", description: "Keep core tight and spine neutral." },
+        ];
+      } else if (fitnessGoal.toLowerCase().includes("gain") || fitnessGoal.toLowerCase().includes("build") || fitnessGoal.toLowerCase().includes("muscle")) {
+        routines = [
+          { name: "Compound Bench Press", sets: 4, reps: 8, description: "Hypertrophy focus." },
+          { name: "Seated Cable Rows", sets: 4, reps: 10, description: "Focus on squeeze at the peak." },
+          { name: "Overhead Shoulder Press", sets: 3, reps: 8, description: "Core braced throughout." },
+          { name: "Bicep Curl / Tricep Extension Superset", sets: 3, reps: 12, description: "High pump arm finisher." },
+        ];
+      } else {
+        routines = [
+          { name: "Bodyweight Lunges", sets: 3, reps: 12, description: "Step back lunges for knee safety." },
+          { name: "Push-Ups", sets: 3, reps: 10, description: "Standard pushups. Elevate hands if too difficult." },
+          { name: "Dumbbell Single-Arm Row", sets: 3, reps: 12, description: "Support body on a bench." },
+          { name: "Bicycle Crunches", sets: 3, reps: 20, description: "Slow and controlled core twists." },
+        ];
+      }
+      return { day, routines };
     }
-    
-    return { day, routines };
   });
 
   const dailyCalories = fitnessGoal.toLowerCase().includes("loss") ? 1600 : 2500;
@@ -196,7 +249,7 @@ export function generateAndSavePlan(
   
   return saveMockPlan(userId, {
     userId,
-    name: `${fitnessGoal} Plan (${fitnessLevel}) - Generated by AI`,
+    name: `${workoutStyle === "darebee" ? "Darebee Circuit" : fitnessGoal} Plan (${fitnessLevel}) - Generated by AI`,
     isActive: true,
     workoutPlan: { schedule, exercises },
     dietPlan: { dailyCalories, meals }

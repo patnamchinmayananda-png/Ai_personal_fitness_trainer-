@@ -1,12 +1,20 @@
 "use client";
 
 import { SignInButton, SignUpButton, UserButton, useUser } from "@/hooks/useMockableClerk";
-import { DumbbellIcon, HomeIcon, UserIcon, ZapIcon } from "lucide-react";
+import { DumbbellIcon, HomeIcon, UserIcon, ZapIcon, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 const Navbar = () => {
   const { isSignedIn } = useUser();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-md border-b border-border py-3">
@@ -23,6 +31,19 @@ const Navbar = () => {
 
         {/* NAVIGATION */}
         <nav className="flex items-center gap-5">
+          {/* THEME TOGGLE */}
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            aria-label="Toggle theme"
+          >
+            {mounted && theme === "dark" ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </button>
+
           {isSignedIn ? (
             <>
               <Link

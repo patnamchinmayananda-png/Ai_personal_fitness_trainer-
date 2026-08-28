@@ -144,6 +144,7 @@ http.route({
         fitness_goal,
         fitness_level,
         dietary_restrictions,
+        workout_style,
       } = payload;
 
       console.log("Payload is here:", payload);
@@ -157,6 +158,8 @@ http.route({
         },
       });
 
+      const isDarebee = workout_style === "darebee";
+
       const workoutPrompt = `You are an experienced fitness coach creating a personalized workout plan based on:
       Age: ${age}
       Height: ${height}
@@ -165,11 +168,18 @@ http.route({
       Available days for workout: ${workout_days}
       Fitness goal: ${fitness_goal}
       Fitness level: ${fitness_level}
+      Workout style: ${isDarebee ? "Darebee circuits (equipment-free, gamified)" : "Standard Gym/Home Split"}
       
       As a professional coach:
-      - Consider muscle group splits to avoid overtraining the same muscles on consecutive days
-      - Design exercises that match the fitness level and account for any injuries
-      - Structure the workouts to specifically target the user's fitness goal
+      ${isDarebee 
+        ? `- Design this as an EQUIPMENT-FREE BODYWEIGHT CIRCUIT program (Darebee style).
+           - Do NOT include any barbell, dumbbell, or machine exercises.
+           - Give each daily routine an epic, gamified Darebee-style name (e.g. "Hero's Journey HIIT", "Cyberpunk Cardio", "Ninja Core", "Gladiator Lower Body").
+           - In the exercises' name or description, clearly specify that they are to be performed in a circuit format: "Level 1: 3 rounds, Level 2: 5 rounds, Level 3: 7 rounds. Rest 2 minutes between rounds."`
+        : `- Consider muscle group splits to avoid overtraining the same muscles on consecutive days
+           - Design exercises that match the fitness level and account for any injuries
+           - Structure the workouts to specifically target the user's fitness goal`
+      }
       
       CRITICAL SCHEMA INSTRUCTIONS:
       - Your output MUST contain ONLY the fields specified below, NO ADDITIONAL FIELDS
@@ -353,10 +363,27 @@ http.route({
         },
       });
 
+      const isDarebee = transcript.toLowerCase().includes("darebee") || 
+                        transcript.toLowerCase().includes("bodyweight") || 
+                        transcript.toLowerCase().includes("circuit") || 
+                        transcript.toLowerCase().includes("no equipment");
+
       const workoutPrompt = `You are an experienced fitness coach. Read the conversation history between the coach and user:
       \n${transcript}\n
       
       Extract their workout preferences and generate a personalized workout plan matching the schema.
+      Workout Style: ${isDarebee ? "Darebee circuits (equipment-free, gamified)" : "Standard Gym/Home Split"}
+      
+      As a professional coach:
+      ${isDarebee 
+        ? `- Design this as an EQUIPMENT-FREE BODYWEIGHT CIRCUIT program (Darebee style).
+           - Do NOT include any barbell, dumbbell, or machine exercises.
+           - Give each daily routine an epic, gamified Darebee-style name (e.g. "Hero's Journey HIIT", "Cyberpunk Cardio", "Ninja Core", "Gladiator Lower Body").
+           - In the exercises' name or description, clearly specify that they are to be performed in a circuit format: "Level 1: 3 rounds, Level 2: 5 rounds, Level 3: 7 rounds. Rest 2 minutes between rounds."`
+        : `- Consider muscle group splits to avoid overtraining the same muscles on consecutive days
+           - Design exercises that match the fitness level and account for any injuries
+           - Structure the workouts to specifically target the user's fitness goal`
+      }
       
       CRITICAL SCHEMA INSTRUCTIONS:
       - "sets" and "reps" MUST ALWAYS be NUMBERS, never strings

@@ -4,6 +4,7 @@ import { useUser } from "@/hooks/useMockableClerk";
 import { useQuery } from "@/hooks/useMockableConvex";
 import { api } from "../../../convex/_generated/api";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import ProfileHeader from "@/components/ProfileHeader";
 import NoFitnessPlan from "@/components/NoFitnessPlan";
 import CornerElements from "@/components/CornerElements";
@@ -20,8 +21,9 @@ import {
 } from "@/components/ui/accordion";
 
 const ProfilePage = () => {
-  const { user } = useUser();
-  const userId = user?.id as string;
+  const { user, isSignedIn, isLoaded } = useUser();
+  const userId = (user?.id || "user_mock123") as string;
+  const router = useRouter();
 
   const allPlans = useQuery(api.plans.getUserPlans, { userId });
   const [selectedPlanId, setSelectedPlanId] = useState<null | string>(null);
@@ -32,14 +34,24 @@ const ProfilePage = () => {
     setIsMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [isLoaded, isSignedIn, router]);
+
   const activePlan = allPlans?.find((plan) => plan.isActive);
 
   const currentPlan = selectedPlanId
     ? allPlans?.find((plan) => plan._id === selectedPlanId)
     : activePlan;
 
-  if (!isMounted) {
-    return null;
+  if (!isMounted || !isLoaded || !isSignedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center font-mono text-sm text-muted-foreground pt-24">
+        🔒 SECURING SESSION... REDIRECTING...
+      </div>
+    );
   }
 
   return (

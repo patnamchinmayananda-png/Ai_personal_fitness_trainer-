@@ -35,10 +35,17 @@ const GenerateProgramPage = () => {
     workoutDays: 3,
     injuries: "None",
     dietaryRestrictions: "None",
+    workoutStyle: "standard",
   });
 
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const router = useRouter();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      router.push("/sign-in");
+    }
+  }, [isLoaded, isSignedIn, router]);
 
   const messageContainerRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +60,8 @@ const GenerateProgramPage = () => {
           user?.id || "user_mock123",
           formData.fitnessGoal,
           formData.workoutDays,
-          formData.fitnessLevel
+          formData.fitnessLevel,
+          formData.workoutStyle
         );
         setConnecting(false);
         setCallEnded(true);
@@ -76,6 +84,7 @@ const GenerateProgramPage = () => {
             fitness_goal: formData.fitnessGoal,
             fitness_level: formData.fitnessLevel,
             dietary_restrictions: formData.dietaryRestrictions,
+            workout_style: formData.workoutStyle,
           }),
         });
 
@@ -160,6 +169,7 @@ const GenerateProgramPage = () => {
         if (replyText.includes("Generating your personalized program")) {
           let parsedDays = 3;
           let parsedGoal = "Muscle Gain";
+          let parsedStyle = "standard";
           
           const fullHistory = [...updatedMessages, assistantMsg];
           for (let i = fullHistory.length - 1; i >= 0; i--) {
@@ -179,6 +189,10 @@ const GenerateProgramPage = () => {
               } else if (content.includes("muscle") || content.includes("gain") || content.includes("strength")) {
                 parsedGoal = "Muscle Gain";
               }
+
+              if (content.includes("darebee") || content.includes("bodyweight") || content.includes("circuit") || content.includes("no equipment") || content.includes("home")) {
+                parsedStyle = "darebee";
+              }
             }
           }
 
@@ -187,7 +201,8 @@ const GenerateProgramPage = () => {
               user?.id || "user_mock123",
               parsedGoal,
               parsedDays,
-              "Intermediate"
+              "Intermediate",
+              parsedStyle
             );
             setCallEnded(true);
           }, 1500);
@@ -232,6 +247,14 @@ const GenerateProgramPage = () => {
       }
     }
   };
+
+  if (!isLoaded || !isSignedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center font-mono text-sm text-muted-foreground pt-24">
+        🔒 SECURING SESSION... REDIRECTING TO SIGN IN...
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen text-foreground overflow-hidden  pb-6 pt-24">
@@ -449,6 +472,18 @@ const GenerateProgramPage = () => {
                   <option value={4}>4 Days (Mon, Tue, Thu, Fri)</option>
                   <option value={5}>5 Days (Mon, Tue, Wed, Thu, Fri)</option>
                   <option value={2}>2 Days (Tue, Thu)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-muted-foreground mb-2 uppercase">Workout Style</label>
+                <select
+                  value={formData.workoutStyle}
+                  onChange={(e) => setFormData({ ...formData, workoutStyle: e.target.value })}
+                  className="w-full bg-background border border-border rounded p-3 text-sm focus:border-primary focus:outline-none transition-colors duration-200"
+                >
+                  <option value="standard">Standard (Gym / Weight Training)</option>
+                  <option value="darebee">Darebee Circuits (Equipment-Free, Gamified)</option>
                 </select>
               </div>
 

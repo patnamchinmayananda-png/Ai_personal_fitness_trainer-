@@ -118,6 +118,104 @@ const HomePage = () => {
       </section>
 
       <HowItWorks />
+
+      {/* SUCCESS STORIES SECTION */}
+      <section className="py-20 relative border-t border-border/50">
+        <div className="container mx-auto px-4 max-w-6xl">
+          {/* Section Header */}
+          <div className="bg-card/90 backdrop-blur-sm border border-border rounded-lg overflow-hidden mb-16 reveal-up">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background/70">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse"></div>
+                <span className="text-sm text-primary font-medium">Motivation Zone</span>
+              </div>
+              <div className="text-sm text-muted-foreground">User Results</div>
+            </div>
+            
+            <div className="p-8 text-center">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">
+                <span className="text-foreground">Real </span>
+                <span className="text-primary">Transformations</span>
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+                Discover the actual physical results achieved by users following personalized AI training and nutrition plans.
+              </p>
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* Card 1: Male */}
+            <div className="group relative bg-card/60 backdrop-blur-sm border border-border rounded-xl overflow-hidden shadow-lg hover:border-primary/50 transition-all duration-300 reveal-up">
+              {/* Corner indicators */}
+              <div className="absolute top-2 left-2 text-[10px] font-mono text-primary opacity-60">&gt; CASE_01</div>
+              <div className="absolute top-2 right-2 text-[10px] font-mono text-muted-foreground uppercase">12 WEEKS</div>
+              
+              <div className="aspect-square relative w-full overflow-hidden border-b border-border bg-black/40">
+                <img
+                  src="/male_transform.jpg"
+                  alt="Male Fitness Transformation"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent pointer-events-none" />
+              </div>
+              
+              <div className="p-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold font-mono">
+                    Marcus<span className="text-primary">.fit</span>
+                  </h3>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-primary/20 text-primary border border-primary/30">
+                    MUSCLE GAIN
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  &quot;I was always struggling to structure my workouts. The AI split combined Bench, OHP, and Squats with precise diet targets. I lost 12kg of body fat and built solid athletic muscle.&quot;
+                </p>
+                <div className="pt-2 flex justify-between items-center text-xs font-mono text-muted-foreground border-t border-border/40">
+                  <span>Weight: 82kg &gt; 74kg</span>
+                  <span className="text-primary font-bold">Body Fat: -9%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Female */}
+            <div className="group relative bg-card/60 backdrop-blur-sm border border-border rounded-xl overflow-hidden shadow-lg hover:border-primary/50 transition-all duration-300 reveal-up">
+              {/* Corner indicators */}
+              <div className="absolute top-2 left-2 text-[10px] font-mono text-primary opacity-60">&gt; CASE_02</div>
+              <div className="absolute top-2 right-2 text-[10px] font-mono text-muted-foreground uppercase">10 WEEKS</div>
+              
+              <div className="aspect-square relative w-full overflow-hidden border-b border-border bg-black/40">
+                <img
+                  src="/female_transform.jpg"
+                  alt="Female Fitness Transformation"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent pointer-events-none" />
+              </div>
+              
+              <div className="p-6 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold font-mono">
+                    Sarah<span className="text-primary">.fit</span>
+                  </h3>
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-secondary/20 text-secondary border border-secondary/30">
+                    TONE & HIIT
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  &quot;The equipment-free Darebee circuits let me work out in my apartment. The diet suggestions kept me full while maintaining a calorie deficit. My core strength has never been better!&quot;
+                </p>
+                <div className="pt-2 flex justify-between items-center text-xs font-mono text-muted-foreground border-t border-border/40">
+                  <span>Goal: Conditioning</span>
+                  <span className="text-primary font-bold">Core Strength: +40%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <UserPrograms />
     </div>
   );
